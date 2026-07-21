@@ -47,6 +47,7 @@ const milestoneDeck = [
   ["Flagship collaboration", "Order", { brand: 4, production: 4, staffing: 2 }, { cash: 8 }, 5, "#efb99f"],
 ].map(([name, kind, requirements, reward, points, color], id) => ({ id: `m${id}`, name, kind, requirements, reward, points, color }));
 
+const WIN_SCORE = 10;
 const PLAYER_COLORS = ["#c8f04b", "#f3a986", "#8fb4ef", "#d39bdd"];
 const FOUNDER_ARCHETYPES = [
   { name: "The Storyteller", stat: "brand" },
@@ -97,9 +98,10 @@ function render() {
   $("#founderLabel").textContent = `${player.founderName || player.founder?.name} · +1 permanent ${STAT_META[player.founder?.stat || Object.keys(player.strengths)[0]].label}`;
   $("#turnPrompt").textContent = isMyTurn() ? `${player.name}, choose one action.` : `Waiting for ${player.name} to take their turn.`;
   $("#score").textContent = player.score;
+  $("#goal").textContent = WIN_SCORE;
   $("#cash").textContent = player.cash;
   $("#turn").textContent = state.turn;
-  $("#scoreProgress").style.width = `${Math.min(100, player.score / 15 * 100)}%`;
+  $("#scoreProgress").style.width = `${Math.min(100, player.score / WIN_SCORE * 100)}%`;
   $("#investButton").disabled = player.cash < 5 || !isMyTurn() || state.pendingDiscards.length > 0;
   $("#refreshMarketButton").disabled = player.cash < 1 || !isMyTurn() || state.pendingDiscards.length > 0;
   const chaosBanner = $("#chaosBanner");
@@ -308,7 +310,7 @@ function completeBrief() {
   replenish(state.milestones, state.milestoneDraw, milestoneDeck);
   $("#briefDialog").close();
   playTone(620, 0.12);
-  const won = player.score >= 15;
+  const won = player.score >= WIN_SCORE;
   advanceTurn(`${player.name} completed ${card.name} · +${card.points} reputation`);
   if (won) setTimeout(() => showWin(player), 450);
 }
@@ -334,7 +336,7 @@ function invest() {
   player.cash -= 5;
   player.score += 1;
   playTone(520);
-  const won = player.score >= 15;
+  const won = player.score >= WIN_SCORE;
   advanceTurn(`${player.name} invested in growth · +1 reputation`);
   if (won) setTimeout(() => showWin(player), 450);
 }
