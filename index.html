@@ -10,6 +10,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    window.quickReady = Promise.resolve(false);
+    if (location.hostname.endsWith(".quick.shopify.io")) {
+      window.quickReady = new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "/client/quick.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+    }
+  </script>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -30,16 +42,21 @@
       <div class="company-intro">
         <p class="eyebrow">CURRENT PLAYER</p>
         <h1 id="companyName">Day One Goods</h1>
+        <p class="founder-label" id="founderLabel"></p>
         <p id="turnPrompt">Build something people want.</p>
       </div>
       <div class="score-card">
+        <div class="chaos-banner" id="chaosBanner" hidden></div>
         <div class="score-copy"><span>REPUTATION</span><strong><b id="score">0</b> / <span id="goal">15</span></strong></div>
         <div class="progress-track"><span id="scoreProgress"></span></div>
       </div>
       <div class="company-metrics">
         <div><span class="metric-icon cash-icon">$</span><p><b id="cash">2</b><small>CASH</small></p></div>
         <div><span class="metric-icon turn-icon">T</span><p><b id="turn">1</b><small>TURN</small></p></div>
-        <button class="invest-button" id="investButton" disabled><span>↑</span><p>INVEST CASH<small>$5 → 1 reputation</small></p></button>
+        <div class="cash-actions">
+          <button class="invest-button" id="refreshMarketButton" disabled><span>↻</span><p>REFRESH MARKET<small>$1 · uses your turn</small></p></button>
+          <button class="invest-button" id="investButton" disabled><span>↑</span><p>INVEST CASH<small>$5 → 1 reputation</small></p></button>
+        </div>
       </div>
     </section>
     <nav class="player-strip" id="playerStrip" aria-label="Players"></nav>
@@ -87,9 +104,11 @@
     <h2>Build your way to 15 reputation.</h2>
     <ol>
       <li><span>01</span><div><b>Choose one action, then pass the device.</b><p>On your turn, draft one Time & Talent card or complete one Order & Milestone brief. Play then moves to the next founder.</p></div></li>
-      <li><span>02</span><div><b>Assemble the right skills.</b><p>Cards provide Brand, Fulfillment, Production, Staffing, and Operations. Select cards whose combined stats meet a brief.</p></div></li>
-      <li><span>03</span><div><b>Trade cards for growth.</b><p>Used cards are discarded. Rewards grant reputation, cash, or a permanent strength that helps with every future brief.</p></div></li>
+      <li><span>02</span><div><b>Start with a founder strength.</b><p>Every company gets a named founder and +1 permanent skill. Talent cards add Brand, Fulfillment, Production, Staffing, and Operations.</p></div></li>
+      <li><span>03</span><div><b>Trade cards—or outsource—for growth.</b><p>Used cards are discarded. While completing a brief, pay $3 per outsourced skill point. Rewards grant reputation, cash, or permanent strengths.</p></div></li>
       <li><span>04</span><div><b>Keep the market moving.</b><p>Whenever you take a card, the row slides right and a fresh card enters on the left.</p></div></li>
+      <li><span>05</span><div><b>Use cash tactically.</b><p>Pay $1 to refresh the entire talent market, or invest $5 for 1 reputation. Either action uses your turn.</p></div></li>
+      <li><span>06</span><div><b>Expect chaos—if you invited it.</b><p>A Chaos Monkey can appear while refilling the talent market. Resolve it immediately; ongoing effects last until the next monkey appears.</p></div></li>
     </ol>
     <button class="primary-button" id="rulesStart">Let's build</button>
   </dialog>
@@ -97,13 +116,41 @@
   <dialog id="setupDialog" class="game-dialog setup-dialog">
     <p class="eyebrow">LOCAL MULTIPLAYER</p>
     <h2>Who is building today?</h2>
-    <p class="setup-copy">Play pass-and-play on one device. After each action, hand the screen to the next founder.</p>
-    <label class="player-count-label">NUMBER OF PLAYERS
-      <select id="playerCount"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select>
-    </label>
-    <div class="setup-names-heading"><span>COMPANY NAMES</span><button id="shuffleNamesButton" type="button">↻ New suggestions</button></div>
-    <div class="player-inputs" id="playerInputs"></div>
-    <button class="primary-button" id="startGameButton">Start the game</button>
+    <p class="setup-copy">Play together on one device or create a live game across multiple computers.</p>
+    <div class="mode-tabs" role="tablist">
+      <button class="active" id="localModeButton" role="tab">Same device</button>
+      <button id="onlineModeButton" role="tab">Different devices</button>
+    </div>
+    <div id="localSetupPanel">
+      <label class="player-count-label">NUMBER OF PLAYERS
+        <select id="playerCount"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select>
+      </label>
+      <div class="setup-names-heading"><span>COMPANY NAMES</span><button id="shuffleNamesButton" type="button">↻ New suggestions</button></div>
+      <div class="player-inputs" id="playerInputs"></div>
+      <label class="chaos-toggle"><input id="localChaosToggle" type="checkbox" checked /><span></span><p><b>Invite the Chaos Monkey</b><small>Add unpredictable market events.</small></p></label>
+      <button class="primary-button" id="startGameButton">Start local game</button>
+    </div>
+    <div id="onlineSetupPanel" hidden>
+      <label class="online-name-label">YOUR COMPANY NAME<input id="onlineCompanyName" maxlength="28" /></label>
+      <div class="online-actions">
+        <div><b>Create a game</b><p>Choose the table size and share an invite code.</p><select id="onlinePlayerCount"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select><label class="mini-check"><input id="onlineChaosToggle" type="checkbox" checked /> Chaos Monkey on</label><button class="primary-button" id="createOnlineButton">Create game</button></div>
+        <div><b>Join a game</b><p>Enter the five-letter code from the host.</p><input id="joinCodeInput" maxlength="5" placeholder="ABCDE" /><button class="secondary-button" id="joinOnlineButton">Join game</button></div>
+      </div>
+      <p class="quick-note" id="quickNote">Online play is available on the Shopify Quick deployment.</p>
+    </div>
+  </dialog>
+
+  <dialog id="lobbyDialog" class="game-dialog lobby-dialog">
+    <p class="eyebrow">LIVE GAME LOBBY</p><h2>Invite your fellow founders</h2>
+    <div class="invite-code"><span>GAME CODE</span><strong id="lobbyCode">ABCDE</strong><button id="copyInviteButton">Copy invite link</button></div>
+    <div class="lobby-players" id="lobbyPlayers"></div>
+    <p id="lobbyStatus">Waiting for players…</p>
+    <button class="primary-button" id="launchOnlineButton" disabled>Start game</button>
+  </dialog>
+
+  <dialog id="chaosDialog" class="game-dialog chaos-dialog">
+    <div class="chaos-face">🙈</div><p class="eyebrow">CHAOS MONKEY</p><h2 id="chaosTitle">Well, that escalated.</h2><p id="chaosDescription"></p>
+    <div id="discardChoices"></div><button class="primary-button" id="chaosContinueButton">Continue</button>
   </dialog>
 
   <dialog id="winDialog" class="game-dialog win-dialog">
