@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f3f0e8" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <title>FIRST ORDER — a founder card game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="wordmark" href="#" aria-label="First Order home">
+      <span class="wordmark-mark">FO</span>
+      <span>FIRST ORDER<small>THE ENTREPRENEUR GAME</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="text-button" id="howToPlayButton">How to play</button>
+      <button class="icon-button" id="soundButton" aria-label="Toggle sound" title="Toggle sound">◖))</button>
+      <button class="icon-button" id="newGameButton" aria-label="Start a new game" title="New game">↻</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="dashboard" aria-label="Company dashboard">
+      <div class="company-intro">
+        <p class="eyebrow">CURRENT PLAYER</p>
+        <h1 id="companyName">Day One Goods</h1>
+        <p id="turnPrompt">Build something people want.</p>
+      </div>
+      <div class="score-card">
+        <div class="score-copy"><span>REPUTATION</span><strong><b id="score">0</b> / <span id="goal">15</span></strong></div>
+        <div class="progress-track"><span id="scoreProgress"></span></div>
+      </div>
+      <div class="company-metrics">
+        <div><span class="metric-icon cash-icon">$</span><p><b id="cash">2</b><small>CASH</small></p></div>
+        <div><span class="metric-icon turn-icon">T</span><p><b id="turn">1</b><small>TURN</small></p></div>
+        <button class="invest-button" id="investButton" disabled><span>↑</span><p>INVEST CASH<small>$5 → 1 reputation</small></p></button>
+      </div>
+    </section>
+    <nav class="player-strip" id="playerStrip" aria-label="Players"></nav>
+
+    <section class="board-section milestones-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">MAKE YOUR MARK</p><h2>Orders & milestones</h2></div>
+        <p>Trade time cards to meet the brief. Permanent strengths count automatically.</p>
+      </div>
+      <div class="card-row milestone-row" id="milestoneRow" aria-live="polite"></div>
+    </section>
+
+    <section class="board-section market-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">BUILD YOUR TEAM</p><h2>Open talent market</h2></div>
+        <div class="turn-choice"><span>ON YOUR TURN</span><b>Draft a card</b><i>or</i><b>Complete a brief</b></div>
+      </div>
+      <div class="card-row market-row" id="marketRow" aria-live="polite"></div>
+    </section>
+
+    <section class="workspace">
+      <div class="section-heading hand-heading">
+        <div><p class="eyebrow">YOUR WORKSPACE</p><h2>Time & talent <span id="handCount">0 cards</span></h2></div>
+        <p id="handHint">Draft a card from the talent market to get started.</p>
+      </div>
+      <div class="skill-bank" id="skillBank" aria-label="Combined available skills"></div>
+      <div class="hand" id="hand"></div>
+      <div class="strengths">
+        <div class="strengths-title"><span>✦</span><p><b>PERMANENT STRENGTHS</b><small>Earned from milestones. Added to every brief.</small></p></div>
+        <div class="strength-list" id="strengthList"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="briefDialog" class="game-dialog">
+    <button class="dialog-close" id="briefClose" aria-label="Close">×</button>
+    <div id="briefContent"></div>
+  </dialog>
+
+  <dialog id="rulesDialog" class="game-dialog rules-dialog">
+    <button class="dialog-close" id="rulesClose" aria-label="Close">×</button>
+    <p class="eyebrow">QUICK START</p>
+    <h2>Build your way to 15 reputation.</h2>
+    <ol>
+      <li><span>01</span><div><b>Choose one action, then pass the device.</b><p>On your turn, draft one Time & Talent card or complete one Order & Milestone brief. Play then moves to the next founder.</p></div></li>
+      <li><span>02</span><div><b>Assemble the right skills.</b><p>Cards provide Brand, Fulfillment, Production, Staffing, and Operations. Select cards whose combined stats meet a brief.</p></div></li>
+      <li><span>03</span><div><b>Trade cards for growth.</b><p>Used cards are discarded. Rewards grant reputation, cash, or a permanent strength that helps with every future brief.</p></div></li>
+      <li><span>04</span><div><b>Keep the market moving.</b><p>Whenever you take a card, the row slides right and a fresh card enters on the left.</p></div></li>
+    </ol>
+    <button class="primary-button" id="rulesStart">Let's build</button>
+  </dialog>
+
+  <dialog id="setupDialog" class="game-dialog setup-dialog">
+    <p class="eyebrow">LOCAL MULTIPLAYER</p>
+    <h2>Who is building today?</h2>
+    <p class="setup-copy">Play pass-and-play on one device. After each action, hand the screen to the next founder.</p>
+    <label class="player-count-label">NUMBER OF PLAYERS
+      <select id="playerCount"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select>
+    </label>
+    <div class="setup-names-heading"><span>COMPANY NAMES</span><button id="shuffleNamesButton" type="button">↻ New suggestions</button></div>
+    <div class="player-inputs" id="playerInputs"></div>
+    <button class="primary-button" id="startGameButton">Start the game</button>
+  </dialog>
+
+  <dialog id="winDialog" class="game-dialog win-dialog">
+    <p class="eyebrow">YOU BUILT SOMETHING REAL</p>
+    <div class="win-mark">✦</div>
+    <h2><span id="winnerName">Day One Goods</span> wins!</h2>
+    <p>They reached <b id="finalScore">15 reputation</b> after <b id="finalTurns">12 total turns</b>.</p>
+    <button class="primary-button" id="playAgainButton">Play again</button>
+  </dialog>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
