@@ -320,13 +320,18 @@ function refreshMarket() {
   const player = currentPlayer();
   if (player.cash < 1) return;
   player.cash -= 1;
-  state.talentDraw.push(...state.market);
-  state.talentDraw = shuffle(state.talentDraw);
+  const combinedDeck = shuffle([...state.talentDraw, ...state.market]);
+  const deferredChaos = [];
   state.market = [];
-  let chaos = null;
-  for (let index = 0; index < 5; index++) chaos = replenishTalent() || chaos;
-  advanceTurn(`${player.name} refreshed the talent market`);
-  if (chaos) showChaos(chaos);
+  while (state.market.length < 5 && combinedDeck.length) {
+    const card = combinedDeck.shift();
+    if (card.chaos) deferredChaos.push(card);
+    else state.market.push(card);
+  }
+  state.talentDraw = shuffle([...combinedDeck, ...deferredChaos]);
+  render();
+  commitNetworkState();
+  notify(`${player.name} refreshed only the talent market · turn continues`);
 }
 
 function invest() {
