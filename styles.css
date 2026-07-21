@@ -44,6 +44,9 @@ main { overflow: hidden; }
 .chaos-banner { margin: -9px 0 13px; padding: 8px 11px; border: 1px solid rgba(200,240,75,.38); border-radius: 6px; background: rgba(200,240,75,.09); text-align: left; }
 .chaos-banner b { display: block; color: var(--lime); font-size: 10px; }
 .chaos-banner span { display: block; margin-top: 3px; color: #c2d1ca; font-size: 8px; }
+.endgame-banner { margin: -9px 0 13px; padding: 9px 11px; border: 1px solid rgba(241,184,74,.52); border-radius: 6px; background: rgba(241,184,74,.13); text-align: left; }
+.endgame-banner b { display: block; color: #ffd873; font: 700 9px "DM Mono"; letter-spacing: .1em; }
+.endgame-banner span { display: block; margin-top: 4px; color: #d9e1dd; font-size: 9px; }
 .score-copy { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; font: 500 11px "DM Mono", monospace; letter-spacing: .14em; color: #aac4b8; }
 .score-copy strong { color: white; font: 700 19px Manrope, sans-serif; letter-spacing: 0; }
 .score-copy b { font-size: 40px; }

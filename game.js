@@ -63,7 +63,7 @@ const CHAOS_CARDS = [
   { id: "c4", name: "Brief reset", title: "The roadmap has changed", description: "Discard every open order and milestone, then deal four new briefs.", effect: "refresh" },
   { id: "c5", name: "Hiring rebate", title: "Free money, briefly", description: "Drafting a talent card earns $2 until the next Chaos Monkey.", effect: "cashback" },
 ];
-const state = { players: [], currentPlayerIndex: 0, turn: 1, market: [], milestones: [], talentDraw: [], milestoneDraw: [], activeBrief: null, selected: new Set(), outsourced: {}, sound: true, chaosEnabled: true, activeChaos: null, pendingDiscards: [] };
+const state = { players: [], currentPlayerIndex: 0, turn: 1, market: [], milestones: [], talentDraw: [], milestoneDraw: [], activeBrief: null, selected: new Set(), outsourced: {}, sound: true, chaosEnabled: true, activeChaos: null, pendingDiscards: [], endgame: null };
 const network = { mode: "local", clientId: sessionStorage.getItem("first-order-client") || crypto.randomUUID(), gameId: null, gameCode: null, games: null, unsubscribe: null, hostId: null };
 sessionStorage.setItem("first-order-client", network.clientId);
 const $ = (selector) => document.querySelector(selector);
@@ -77,14 +77,14 @@ const statGrid = (stats, compact = false) => `<div class="stat-grid${compact ? "
 
 const currentPlayer = () => state.players[state.currentPlayerIndex];
 const localPlayer = () => network.mode === "online" ? state.players.find(player => player.clientId === network.clientId) : currentPlayer();
-const isMyTurn = () => network.mode !== "online" || currentPlayer()?.clientId === network.clientId;
+const isMyTurn = () => state.endgame?.turnsRemaining !== 0 && (network.mode !== "online" || currentPlayer()?.clientId === network.clientId);
 
 function newGame(names = state.players.map(player => player.name), options = {}) {
   const safeNames = names.length >= 2 ? names : ["Day One Goods", "Bright Side Co."];
   const founders = shuffle(FOUNDER_ARCHETYPES).slice(0, safeNames.length);
   Object.assign(state, {
-    players: safeNames.map((name, index) => ({ id: crypto.randomUUID(), name, founder: founders[index], founderName: options.founderNames?.[index] || founders[index].name, score: 0, cash: 2, hand: [], strengths: { [founders[index].stat]: 1 }, color: PLAYER_COLORS[index], clientId: options.clientIds?.[index] || null })),
-    currentPlayerIndex: 0, turn: 1, activeBrief: null, selected: new Set(), outsourced: {}, chaosEnabled: options.chaosEnabled ?? true, activeChaos: null, pendingDiscards: [],
+    players: safeNames.map((name, index) => ({ id: crypto.randomUUID(), name, founder: founders[index], founderName: options.founderNames?.[index] || founders[index].name, score: 0, cash: index, hand: [], strengths: { [founders[index].stat]: 1 }, color: PLAYER_COLORS[index], clientId: options.clientIds?.[index] || null })),
+    currentPlayerIndex: 0, turn: 1, activeBrief: null, selected: new Set(), outsourced: {}, chaosEnabled: options.chaosEnabled ?? true, activeChaos: null, pendingDiscards: [], endgame: null,
     talentDraw: buildTalentDraw(options.chaosEnabled ?? true), milestoneDraw: shuffle(milestoneDeck),
   });
   state.market = state.talentDraw.splice(0, 5);
@@ -107,6 +107,9 @@ function render() {
   const chaosBanner = $("#chaosBanner");
   chaosBanner.hidden = !state.activeChaos;
   if (state.activeChaos) chaosBanner.innerHTML = `<b>🙈 ${escapeHtml(state.activeChaos.name)}</b><span>${escapeHtml(state.activeChaos.description)}</span>`;
+  const endgameBanner = $("#endgameBanner");
+  endgameBanner.hidden = !state.endgame;
+  if (state.endgame) endgameBanner.innerHTML = `<b>FINAL STRETCH</b><span>${state.endgame.turnsRemaining} turn${state.endgame.turnsRemaining === 1 ? "" : "s"} remain · most reputation wins</span>`;
   renderPlayers();
   renderMarket();
   renderMilestones();
@@ -310,9 +313,8 @@ function completeBrief() {
   replenish(state.milestones, state.milestoneDraw, milestoneDeck);
   $("#briefDialog").close();
   playTone(620, 0.12);
-  const won = player.score >= WIN_SCORE;
-  advanceTurn(`${player.name} completed ${card.name} · +${card.points} reputation`);
-  if (won) setTimeout(() => showWin(player), 450);
+  const triggeredEndgame = triggerEndgameIfNeeded(player);
+  advanceTurn(`${player.name} completed ${card.name} · +${card.points} reputation`, triggeredEndgame);
 }
 
 function refreshMarket() {
@@ -341,23 +343,45 @@ function invest() {
   player.cash -= 5;
   player.score += 1;
   playTone(520);
-  const won = player.score >= WIN_SCORE;
-  advanceTurn(`${player.name} invested in growth · +1 reputation`);
-  if (won) setTimeout(() => showWin(player), 450);
+  const triggeredEndgame = triggerEndgameIfNeeded(player);
+  advanceTurn(`${player.name} invested in growth · +1 reputation`, triggeredEndgame);
 }
 
-function advanceTurn(message) {
+function triggerEndgameIfNeeded(player) {
+  if (state.endgame || player.score < WIN_SCORE) return false;
+  state.endgame = {
+    triggeredBy: player.name,
+    turnsRemaining: (state.players.length - 1 - state.currentPlayerIndex) + state.players.length,
+  };
+  return true;
+}
+
+function advanceTurn(message, justTriggeredEndgame = false) {
+  if (state.endgame && !justTriggeredEndgame) state.endgame.turnsRemaining -= 1;
+  const gameEnded = state.endgame?.turnsRemaining === 0;
   state.turn += 1;
-  state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+  if (!gameEnded) state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
   render();
   commitNetworkState();
-  notify(`${message} · Next: ${currentPlayer().name}`);
+  if (gameEnded) {
+    notify(`${message} · Final scores are in`);
+    setTimeout(showFinalResults, 450);
+  } else {
+    const finalNotice = justTriggeredEndgame ? " · final stretch begins" : "";
+    notify(`${message}${finalNotice} · Next: ${currentPlayer().name}`);
+  }
 }
-function showWin(player) {
-  $("#winnerName").textContent = player.name;
-  $("#finalScore").textContent = `${player.score} reputation`;
+
+function showFinalResults() {
+  const highScore = Math.max(...state.players.map(player => player.score));
+  const winners = state.players.filter(player => player.score === highScore);
+  const names = winners.map(player => player.name);
+  const winnerText = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} & ${names.at(-1)}`;
+  $("#winnerName").textContent = winnerText;
+  $("#winnerHeading").lastChild.textContent = names.length === 1 ? " wins!" : " tie!";
+  $("#finalScore").textContent = `${highScore} reputation`;
   $("#finalTurns").textContent = `${state.turn - 1} total turns`;
-  $("#winDialog").showModal();
+  if (!$("#winDialog").open) $("#winDialog").showModal();
 }
 function playTone(frequency, duration = 0.07) {
   if (!state.sound) return;
@@ -421,16 +445,18 @@ function gameSnapshot() {
     players: state.players, currentPlayerIndex: state.currentPlayerIndex, turn: state.turn,
     market: state.market, milestones: state.milestones, talentDraw: state.talentDraw,
     milestoneDraw: state.milestoneDraw, chaosEnabled: state.chaosEnabled,
-    activeChaos: state.activeChaos, pendingDiscards: state.pendingDiscards,
+    activeChaos: state.activeChaos, pendingDiscards: state.pendingDiscards, endgame: state.endgame,
   };
 }
 
 function applySnapshot(snapshot) {
   if (!snapshot) return;
   const previousChaosId = state.activeChaos?.id;
+  const gameJustEnded = snapshot.endgame?.turnsRemaining === 0 && state.endgame?.turnsRemaining !== 0;
   Object.assign(state, snapshot, { activeBrief: null, selected: new Set(), outsourced: {} });
   render();
   if (snapshot.activeChaos?.id && snapshot.activeChaos.id !== previousChaosId) showChaos(snapshot.activeChaos);
+  if (gameJustEnded) setTimeout(showFinalResults, 450);
 }
 
 async function ensureQuick() {

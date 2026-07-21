@@ -47,6 +47,7 @@
       </div>
       <div class="score-card">
         <div class="chaos-banner" id="chaosBanner" hidden></div>
+        <div class="endgame-banner" id="endgameBanner" hidden></div>
         <div class="score-copy"><span>REPUTATION</span><strong><b id="score">0</b> / <span id="goal">10</span></strong></div>
         <div class="progress-track"><span id="scoreProgress"></span></div>
       </div>
@@ -101,14 +102,15 @@
   <dialog id="rulesDialog" class="game-dialog rules-dialog">
     <button class="dialog-close" id="rulesClose" aria-label="Close">×</button>
     <p class="eyebrow">QUICK START</p>
-    <h2>Build your way to 10 reputation.</h2>
+    <h2>Reach 10 to start the final stretch.</h2>
     <ol>
-      <li><span>01</span><div><b>Choose one action, then pass the device.</b><p>On your turn, draft one Time & Talent card or complete one Order & Milestone brief. Play then moves to the next founder.</p></div></li>
+      <li><span>01</span><div><b>Choose one action, then pass the device.</b><p>On your turn, draft one Time & Talent card or complete one Order & Milestone brief. The starting player begins with $0; each later seat starts with $1 more.</p></div></li>
       <li><span>02</span><div><b>Start with a founder strength.</b><p>Every company gets a named founder and +1 permanent skill. Talent cards add Brand, Fulfillment, Production, Staffing, and Operations.</p></div></li>
       <li><span>03</span><div><b>Trade cards—or outsource—for growth.</b><p>Used cards are discarded. While completing a brief, pay $3 per outsourced skill point. Rewards grant reputation, cash, or permanent strengths.</p></div></li>
       <li><span>04</span><div><b>Keep the market moving.</b><p>Whenever you take a card, the row slides right and a fresh card enters on the left.</p></div></li>
       <li><span>05</span><div><b>Use cash tactically.</b><p>Pay $1 to refresh only the talent market without using your turn. Open briefs stay in place. Or invest $5 for 1 reputation.</p></div></li>
-      <li><span>06</span><div><b>Expect chaos—if you invited it.</b><p>A Chaos Monkey can appear while refilling the talent market. Resolve it immediately; ongoing effects last until the next monkey appears.</p></div></li>
+      <li><span>06</span><div><b>Trigger the final stretch at 10.</b><p>When anyone reaches 10 reputation, finish the current round and play one complete final round. The company with the most reputation then wins.</p></div></li>
+      <li><span>07</span><div><b>Expect chaos—if you invited it.</b><p>A Chaos Monkey can appear while refilling the talent market. Resolve it immediately; ongoing effects last until the next monkey appears.</p></div></li>
     </ol>
     <button class="primary-button" id="rulesStart">Let's build</button>
   </dialog>
@@ -156,8 +158,8 @@
   <dialog id="winDialog" class="game-dialog win-dialog">
     <p class="eyebrow">YOU BUILT SOMETHING REAL</p>
     <div class="win-mark">✦</div>
-    <h2><span id="winnerName">Day One Goods</span> wins!</h2>
-    <p>They reached <b id="finalScore">10 reputation</b> after <b id="finalTurns">12 total turns</b>.</p>
+    <h2 id="winnerHeading"><span id="winnerName">Day One Goods</span> wins!</h2>
+    <p><b id="finalScore">10 reputation</b> after <b id="finalTurns">12 total turns</b>.</p>
     <button class="primary-button" id="playAgainButton">Play again</button>
   </dialog>
 

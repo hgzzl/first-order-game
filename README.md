@@ -18,7 +18,8 @@ Then open [http://localhost:4173](http://localhost:4173).
 - On Quick, create a live game and share its five-letter code or invite URL so everyone can play from their own computer.
 - Optionally enable the **Chaos Monkey** deck: market replacements can change skill costs, trigger discards, refresh briefs, or create hiring rebates.
 - Every company begins with a named founder and one permanent skill point.
-- Reach **10 reputation** to win.
+- Starting cash scales by seat: the starting player gets $0, player two gets $1, player three gets $2, and player four gets $3.
+- Reaching **10 reputation** triggers the endgame: finish the current round, play one additional full round, then the company with the most reputation wins.
 - Each turn, draft one Time & Talent card, complete a brief, or invest $5 for reputation. You may refresh only the talent market for $1 without ending your turn; open briefs do not move.
 - Select and spend cards whose combined stats meet a brief's requirements; pay $3 for each skill point you outsource.
 - Milestones can grant permanent strengths, which count toward every future brief.
