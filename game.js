@@ -70,9 +70,19 @@ const $ = (selector) => document.querySelector(selector);
 const STAT_ORDER = Object.keys(STAT_META);
 const shuffle = (items) => [...items].sort(() => Math.random() - 0.5);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[character]);
+const skillIcon = (stat, className = "") => `<svg class="skill-icon ${className}" aria-hidden="true"><use href="#icon-${stat}"></use></svg>`;
+const primaryStat = (stats) => Object.entries(stats).sort((a, b) => b[1] - a[1])[0]?.[0] || "operations";
+const cardArtwork = (stats) => {
+  const primary = primaryStat(stats);
+  const supporting = Object.keys(stats).filter(stat => stat !== primary);
+  return `<div class="card-art" style="--art-color:${STAT_META[primary].color}">
+    <span class="art-sun"></span>${skillIcon(primary, "art-main")}
+    <div class="art-support">${supporting.map(stat => `<span style="--art-color:${STAT_META[stat].color}">${skillIcon(stat)}</span>`).join("")}</div>
+  </div>`;
+};
 const statGrid = (stats, compact = false) => `<div class="stat-grid${compact ? " compact" : ""}">${STAT_ORDER.map(key => {
   const value = stats[key] || 0;
-  return `<span class="stat-slot ${value ? "active" : "empty"}" style="--stat-color:${STAT_META[key].color}" title="${STAT_META[key].label}: ${value}"><i></i><em>${STAT_META[key].label}</em><strong>${value || "—"}</strong></span>`;
+  return `<span class="stat-slot ${value ? "active" : "empty"}" style="--stat-color:${STAT_META[key].color}" title="${STAT_META[key].label}: ${value}">${skillIcon(key)}<em>${STAT_META[key].label}</em><strong>${value || "—"}</strong></span>`;
 }).join("")}</div>`;
 
 const currentPlayer = () => state.players[state.currentPlayerIndex];
@@ -130,7 +140,7 @@ function renderPlayers() {
     const totals = totalSkills(player);
     return `<div class="player-chip ${index === state.currentPlayerIndex ? "active" : ""}" style="--player-color:${player.color}">
       <span class="player-dot">${index + 1}</span><p><b>${escapeHtml(player.name)}</b><small>${escapeHtml(player.founderName || player.founder?.name || "Founder")} · +1 ${STAT_META[player.founder?.stat || Object.keys(player.strengths)[0]]?.label}</small></p>
-      <div class="player-skills">${STAT_ORDER.map(stat => `<span style="--stat-color:${STAT_META[stat].color}" title="${STAT_META[stat].label}" aria-label="${STAT_META[stat].label}: ${totals[stat] || 0}"><i></i><small>${STAT_META[stat].label[0]}</small>${totals[stat] || 0}</span>`).join("")}</div>
+      <div class="player-skills">${STAT_ORDER.map(stat => `<span style="--stat-color:${STAT_META[stat].color}" title="${STAT_META[stat].label}" aria-label="${STAT_META[stat].label}: ${totals[stat] || 0}">${skillIcon(stat)}<small>${STAT_META[stat].label[0]}</small>${totals[stat] || 0}</span>`).join("")}</div>
       ${index === state.currentPlayerIndex ? "<em>PLAYING</em>" : ""}<strong class="player-score">${player.score} rep · $${player.cash}</strong>
     </div>`;
   }).join("");
@@ -140,7 +150,7 @@ function renderMarket() {
   $("#marketRow").innerHTML = state.market.map((card, index) => `
     <button class="game-card market-card" data-market="${index}" aria-label="Draft ${card.name}" ${!isMyTurn() || state.pendingDiscards.length ? "disabled" : ""}>
       <div class="card-top" style="background:${card.color}">
-        <p class="card-kind">${card.kind}</p><span class="card-number">0${index + 1}</span><h3>${card.name}</h3>
+        <p class="card-kind">${card.kind}</p><span class="card-number">0${index + 1}</span><h3>${card.name}</h3>${cardArtwork(card.stats)}
       </div>
       <div class="card-body">${statGrid(card.stats)}</div>
     </button>`).join("");
@@ -151,7 +161,7 @@ function renderMilestones() {
   $("#milestoneRow").innerHTML = state.milestones.map((card, index) => {
     const reward = card.reward.cash ? `$${card.reward.cash} cash` : `+1 permanent ${STAT_META[card.reward.permanent].label}`;
     return `<button class="game-card milestone-card" data-milestone="${index}" aria-label="Open brief ${card.name}" ${!isMyTurn() || state.pendingDiscards.length ? "disabled" : ""}>
-      <div class="card-top" style="background:${card.color}"><p class="card-kind">${card.kind}</p><h3>${card.name}</h3></div>
+      <div class="card-top" style="background:${card.color}"><p class="card-kind">${card.kind}</p><span class="card-number">B${String(index + 1).padStart(2, "0")}</span><h3>${card.name}</h3>${cardArtwork(effectiveRequirements(card))}</div>
       <div class="card-body">${statGrid(effectiveRequirements(card))}
       <div class="reward"><p>REWARD<strong>${reward}</strong></p><span class="points">+${card.points}</span></div></div>
     </button>`;
@@ -164,7 +174,7 @@ function renderHand() {
   $("#handCount").textContent = `${player.hand.length} card${player.hand.length === 1 ? "" : "s"}`;
   $("#handHint").textContent = player.hand.length ? `${player.name}'s cards — spent when completing a brief.` : `${player.name} has no cards yet.`;
   $("#hand").innerHTML = player.hand.length ? player.hand.map(card => `
-    <article class="hand-card"><b>${card.name}</b>${statGrid(card.stats, true)}</article>`).join("") : `<div class="empty-hand">This workspace is empty — draft some time or talent.</div>`;
+    <article class="hand-card" style="--card-color:${card.color}"><div class="hand-card-title">${skillIcon(primaryStat(card.stats))}<b>${card.name}</b></div>${statGrid(card.stats, true)}</article>`).join("") : `<div class="empty-hand">This workspace is empty — draft some time or talent.</div>`;
 }
 
 function renderSkillBank() {
@@ -174,7 +184,7 @@ function renderSkillBank() {
   $("#skillBank").innerHTML = `<div class="skill-bank-title"><p class="eyebrow">${escapeHtml(player.name)}</p><b>Skills available for your next brief</b></div>${STAT_ORDER.map(key => {
     const cards = cardTotals[key] || 0;
     const permanent = player.strengths[key] || 0;
-    return `<div class="skill-total" style="--stat-color:${STAT_META[key].color}"><span><i></i>${STAT_META[key].label}</span><strong>${cards + permanent}</strong><small>${cards} from cards${permanent ? ` + ${permanent} permanent` : ""}</small></div>`;
+    return `<div class="skill-total" style="--stat-color:${STAT_META[key].color}"><span>${skillIcon(key)}${STAT_META[key].label}</span><strong>${cards + permanent}</strong><small>${cards} from cards${permanent ? ` + ${permanent} permanent` : ""}</small></div>`;
   }).join("")}`;
 }
 
@@ -278,7 +288,7 @@ function updateBriefDialog() {
       return `<div class="requirement-line" style="--stat-color:${STAT_META[stat].color}"><span>${STAT_META[stat].label}</span><div class="bar"><i style="width:${Math.min(100, have / required * 100)}%"></i></div><strong>${have} / ${required}</strong><div class="outsource-controls">${outsourced ? `<button data-unoutsource="${stat}" aria-label="Remove outsourced ${STAT_META[stat].label}">−</button><b>+${outsourced}</b>` : ""}<button data-outsource="${stat}" ${canAffordMore ? "" : "disabled"}>+$3</button></div></div>`;
     }).join("")}</div>
     <h3>Select cards to spend</h3>
-    <div class="select-cards">${currentPlayer().hand.length ? currentPlayer().hand.map((handCard, index) => `<button class="selectable-card ${state.selected.has(index) ? "selected" : ""}" data-select="${index}"><b>${handCard.name}</b>${statGrid(handCard.stats, true)}</button>`).join("") : `<p>You don't have any cards yet.</p>`}</div>
+    <div class="select-cards">${currentPlayer().hand.length ? currentPlayer().hand.map((handCard, index) => `<button class="selectable-card ${state.selected.has(index) ? "selected" : ""}" style="--card-color:${handCard.color}" data-select="${index}"><div class="hand-card-title">${skillIcon(primaryStat(handCard.stats))}<b>${handCard.name}</b></div>${statGrid(handCard.stats, true)}</button>`).join("") : `<p>You don't have any cards yet.</p>`}</div>
     <div class="dialog-actions"><small>Permanent strengths included.${outsourceCost ? ` Outsourcing: $${outsourceCost}.` : ""}</small><button class="primary-button" id="completeBrief" ${canComplete(card, totals) ? "" : "disabled"}>Complete brief${outsourceCost ? ` · pay $${outsourceCost}` : ""}</button></div>`;
   document.querySelectorAll("[data-select]").forEach(button => button.addEventListener("click", () => {
     const index = Number(button.dataset.select);
